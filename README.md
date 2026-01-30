@@ -46,6 +46,8 @@ Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
 | Variable | Description |
 |----------|-------------|
+| `BASIC_AUTH_USERNAME` | Username for basic auth (leave empty to disable) |
+| `BASIC_AUTH_PASSWORD` | Password for basic auth (leave empty to disable) |
 | `NEXT_PUBLIC_PRODUCER_URL` | Producer service URL |
 | `PRODUCER_API_KEY` | API key for producer service |
 

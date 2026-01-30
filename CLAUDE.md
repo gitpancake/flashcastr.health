@@ -60,6 +60,8 @@ const SERVICES = [
 
 ### Environment Variables
 ```bash
+BASIC_AUTH_USERNAME=admin                                 # Basic auth username (leave empty to disable)
+BASIC_AUTH_PASSWORD=your-password-here                    # Basic auth password (leave empty to disable)
 NEXT_PUBLIC_PRODUCER_URL=https://producer.flashcastr.app  # Default service URL
 PRODUCER_API_KEY=your-api-key-here                        # Optional API auth
 ```
