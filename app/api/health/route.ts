@@ -34,10 +34,10 @@ export async function GET(request: NextRequest) {
           checks: {
             database: 'unknown',
             rabbitmq: 'unknown',
-            spaceInvadersAPI: 'unknown',
+            
             diskPersistence: 'unknown',
           },
-          responseTimes: { database: 0, rabbitmq: 0, api: 0 },
+          responseTimes: { database: 0, rabbitmq: 0,  },
           uptime: 0,
           lastSync: 'unknown',
         });

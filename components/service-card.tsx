@@ -130,7 +130,6 @@ export function ServiceCard({ name, health, loading, error }: ServiceCardProps) 
             <div className="grid grid-cols-2 gap-2">
               <CheckItem label="Database" status={health.checks.database} responseTime={health.responseTimes.database} />
               <CheckItem label="RabbitMQ" status={health.checks.rabbitmq} responseTime={health.responseTimes.rabbitmq} />
-              <CheckItem label="Space Invaders API" status={health.checks.spaceInvadersAPI} responseTime={health.responseTimes.api} />
               <CheckItem label="Disk" status={health.checks.diskPersistence} />
             </div>
           </div>
