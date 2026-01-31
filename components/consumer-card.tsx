@@ -1,13 +1,13 @@
 'use client';
 
-import { ProducerHealth } from '@/lib/types';
+import { ConsumerHealth } from '@/lib/types';
 
 interface StatusBadgeProps {
   status: 'healthy' | 'unhealthy' | 'degraded' | undefined;
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
+function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   const sizeClasses = {
     sm: 'px-2 py-0.5 text-xs',
     md: 'px-3 py-1 text-sm',
@@ -57,14 +57,14 @@ export function StatusBadge({ status, size = 'md' }: StatusBadgeProps) {
   );
 }
 
-interface ServiceCardProps {
+interface ConsumerCardProps {
   name: string;
-  health?: ProducerHealth;
+  health?: ConsumerHealth;
   loading: boolean;
   error?: string;
 }
 
-export function ServiceCard({ name, health, loading, error }: ServiceCardProps) {
+export function ConsumerCard({ name, health, loading, error }: ConsumerCardProps) {
   if (loading) {
     return (
       <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-sm">
@@ -104,33 +104,29 @@ export function ServiceCard({ name, health, loading, error }: ServiceCardProps) 
             <MetricCard
               label="Uptime"
               value={formatUptime(health.uptime)}
-              icon="clock"
             />
             <MetricCard
               label="Memory"
               value={`${health.metrics.memoryUsage}%`}
-              icon="memory"
               warn={health.metrics.memoryUsage > 80}
             />
             <MetricCard
-              label="Messages"
-              value={health.metrics.messages?.published?.toString() || "0"}
-              icon="message"
-              
+              label="Processing Rate"
+              value={`${health.metrics.processingRate}/s`}
             />
             <MetricCard
-              label="Last Sync"
-              value={formatLastSync(health.lastSync)}
-              icon="sync"
+              label="Last Processed"
+              value={formatLastSync(health.lastProcessed)}
             />
           </div>
 
           <div className="border-t border-white/10 pt-4">
             <h4 className="text-sm font-medium text-white/60 mb-3">Service Checks</h4>
             <div className="grid grid-cols-2 gap-2">
-              <CheckItem label="Database" status={health.checks.database} responseTime={health.responseTimes.database} />
-              <CheckItem label="RabbitMQ" status={health.checks.rabbitmq} responseTime={health.responseTimes.rabbitmq} />
-              <CheckItem label="Disk" status={health.checks.diskPersistence} />
+              <CheckItem label="Database" status={normalizeStatus(health.checks.database)} responseTime={health.responseTimes.database} />
+              <CheckItem label="Pinata" status={normalizeStatus(health.checks.pinata)} responseTime={health.responseTimes.pinata} />
+              <CheckItem label="Memory" status={normalizeStatus(health.checks.memory)} />
+              <CheckItem label="Processing" status={normalizeStatus(health.checks.processing)} />
             </div>
           </div>
         </>
@@ -142,7 +138,6 @@ export function ServiceCard({ name, health, loading, error }: ServiceCardProps) 
 interface MetricCardProps {
   label: string;
   value: string;
-  icon: string;
   warn?: boolean;
 }
 
@@ -189,6 +184,13 @@ function CheckItem({ label, status, responseTime }: CheckItemProps) {
   );
 }
 
+// Normalize status from pass/warn/fail to healthy/degraded/unhealthy
+function normalizeStatus(status: string): 'healthy' | 'degraded' | 'unhealthy' {
+  if (status === 'pass' || status === 'healthy') return 'healthy';
+  if (status === 'warn' || status === 'degraded') return 'degraded';
+  return 'unhealthy';
+}
+
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
   const hours = Math.floor((seconds % 86400) / 3600);
@@ -201,13 +203,13 @@ function formatUptime(seconds: number): string {
 
 function formatLastSync(timestamp: string): string {
   if (timestamp === 'never' || timestamp === 'unknown') return timestamp;
-  
+
   try {
     const date = new Date(timestamp);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;

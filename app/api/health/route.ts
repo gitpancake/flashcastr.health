@@ -2,15 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   const serviceUrl = request.nextUrl.searchParams.get('service');
-  
+
   if (!serviceUrl) {
     return NextResponse.json({ error: 'Missing service URL' }, { status: 400 });
   }
 
   try {
-    const apiKey = process.env.PRODUCER_API_KEY;
-    const headers: HeadersInit = {};
+    // Determine which API key to use based on the service URL
+    const producerUrl = process.env.NEXT_PUBLIC_PRODUCER_URL || '';
+    const consumerUrl = process.env.NEXT_PUBLIC_CONSUMER_URL || '';
     
+    let apiKey: string | undefined;
+    if (serviceUrl.includes(producerUrl) || serviceUrl === producerUrl) {
+      apiKey = process.env.PRODUCER_API_KEY;
+    } else if (serviceUrl.includes(consumerUrl) || serviceUrl === consumerUrl) {
+      apiKey = process.env.CONSUMER_API_KEY;
+    } else {
+      // Fallback: try producer key first
+      apiKey = process.env.PRODUCER_API_KEY || process.env.CONSUMER_API_KEY;
+    }
+
+    const headers: HeadersInit = {};
     if (apiKey) {
       headers['x-api-key'] = apiKey;
     }
@@ -25,24 +37,24 @@ export async function GET(request: NextRequest) {
       const quickResponse = await fetch(`${serviceUrl}/health`, {
         cache: 'no-store',
       });
-      
+
       if (quickResponse.ok) {
         const quickData = await quickResponse.json();
         return NextResponse.json({
           ...quickData,
-          metrics: { memoryUsage: 0, failedFlashes: 0, processUptime: 0 },
+          metrics: { memoryUsage: 0, processingRate: 0, errorRate: 0 },
           checks: {
             database: 'unknown',
-            rabbitmq: 'unknown',
-            
-            diskPersistence: 'unknown',
+            pinata: 'unknown',
+            memory: 'unknown',
+            processing: 'unknown',
           },
-          responseTimes: { database: 0, rabbitmq: 0,  },
+          responseTimes: { database: 0, pinata: 0 },
           uptime: 0,
-          lastSync: 'unknown',
+          lastProcessed: 'unknown',
         });
       }
-      
+
       throw new Error(`Service returned ${response.status}`);
     }
 

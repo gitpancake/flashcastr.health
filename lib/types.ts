@@ -12,7 +12,8 @@ export interface MessageStats {
   startedAt: string;
 }
 
-export interface DetailedHealth {
+// Producer Bot health response
+export interface ProducerHealth {
   service: string;
   status: 'healthy' | 'unhealthy' | 'degraded';
   timestamp: string;
@@ -35,6 +36,34 @@ export interface DetailedHealth {
   };
   error?: string;
 }
+
+// Consumer health response
+export interface ConsumerHealth {
+  service: string;
+  status: 'healthy' | 'unhealthy' | 'degraded';
+  timestamp: string;
+  uptime: number;
+  lastProcessed: string;
+  metrics: {
+    memoryUsage: number;
+    processingRate: number;
+    errorRate: number;
+  };
+  checks: {
+    database: 'healthy' | 'unhealthy' | 'degraded' | 'pass' | 'warn' | 'fail';
+    pinata: 'healthy' | 'unhealthy' | 'degraded' | 'pass' | 'warn' | 'fail';
+    memory: 'healthy' | 'unhealthy' | 'degraded' | 'pass' | 'warn' | 'fail';
+    processing: 'healthy' | 'unhealthy' | 'degraded' | 'pass' | 'warn' | 'fail';
+  };
+  responseTimes: {
+    database: number;
+    pinata: number;
+  };
+  error?: string;
+}
+
+// Union type for any service health
+export type DetailedHealth = ProducerHealth | ConsumerHealth;
 
 export interface ProcessMetrics {
   process: {
@@ -59,4 +88,14 @@ export interface ServiceHealth {
   metrics?: ProcessMetrics;
   error?: string;
   loading: boolean;
+}
+
+// Type guard to check if health is ProducerHealth
+export function isProducerHealth(health: DetailedHealth): health is ProducerHealth {
+  return health.service === 'invaders-bot';
+}
+
+// Type guard to check if health is ConsumerHealth
+export function isConsumerHealth(health: DetailedHealth): health is ConsumerHealth {
+  return health.service === 'invaders-consumer';
 }

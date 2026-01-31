@@ -2,11 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { ServiceCard } from '@/components/service-card';
+import { ConsumerCard } from '@/components/consumer-card';
 import { Heartbeat, OverallStatus } from '@/components/status-display';
-import { DetailedHealth } from '@/lib/types';
+import { DetailedHealth, ProducerHealth, ConsumerHealth, isConsumerHealth, isProducerHealth } from '@/lib/types';
 
 interface ServiceState {
   name: string;
+  type: 'producer' | 'consumer';
   health?: DetailedHealth;
   loading: boolean;
   error?: string;
@@ -15,15 +17,21 @@ interface ServiceState {
 const SERVICES = [
   {
     name: 'Producer Bot',
+    type: 'producer' as const,
     url: process.env.NEXT_PUBLIC_PRODUCER_URL || 'https://producer.flashcastr.app',
   },
-];
+  {
+    name: 'Consumer',
+    type: 'consumer' as const,
+    url: process.env.NEXT_PUBLIC_CONSUMER_URL || '',
+  },
+].filter(s => s.url);
 
-const REFRESH_INTERVAL = 30; // seconds
+const REFRESH_INTERVAL = 30;
 
 export default function Dashboard() {
   const [services, setServices] = useState<ServiceState[]>(
-    SERVICES.map((s) => ({ name: s.name, loading: true }))
+    SERVICES.map((s) => ({ name: s.name, type: s.type, loading: true }))
   );
   const [lastCheck, setLastCheck] = useState<string>();
 
@@ -34,10 +42,11 @@ export default function Dashboard() {
           const response = await fetch(`/api/health?service=${encodeURIComponent(service.url)}`);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const health = await response.json();
-          return { name: service.name, health, loading: false };
+          return { name: service.name, type: service.type, health, loading: false };
         } catch (err) {
           return {
             name: service.name,
+            type: service.type,
             loading: false,
             error: err instanceof Error ? err.message : 'Failed to fetch',
           };
@@ -55,12 +64,32 @@ export default function Dashboard() {
     return () => clearInterval(interval);
   }, [fetchHealth]);
 
+  const renderServiceCard = (service: ServiceState) => {
+    if (service.type === 'consumer') {
+      return (
+        <ConsumerCard
+          key={service.name}
+          name={service.name}
+          health={service.health as ConsumerHealth | undefined}
+          loading={service.loading}
+          error={service.error}
+        />
+      );
+    }
+    return (
+      <ServiceCard
+        key={service.name}
+        name={service.name}
+        health={service.health as ProducerHealth | undefined}
+        loading={service.loading}
+        error={service.error}
+      />
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
-      {/* Background gradient */}
       <div className="fixed inset-0 bg-gradient-to-br from-emerald-500/5 via-transparent to-blue-500/5" />
-      
-      {/* Grid pattern */}
       <div
         className="fixed inset-0 opacity-20"
         style={{
@@ -70,7 +99,6 @@ export default function Dashboard() {
       />
 
       <div className="relative">
-        {/* Header */}
         <header className="border-b border-white/10 backdrop-blur-sm">
           <div className="mx-auto max-w-6xl px-6 py-6">
             <div className="flex items-center justify-between">
@@ -90,9 +118,7 @@ export default function Dashboard() {
           </div>
         </header>
 
-        {/* Main content */}
         <main className="mx-auto max-w-6xl px-6 py-8">
-          {/* Overall status */}
           <section className="mb-8">
             <OverallStatus
               services={services.map((s) => ({
@@ -102,23 +128,13 @@ export default function Dashboard() {
             />
           </section>
 
-          {/* Service cards */}
           <section>
             <h2 className="text-lg font-semibold text-white mb-4">Services</h2>
             <div className="grid gap-6 md:grid-cols-2">
-              {services.map((service) => (
-                <ServiceCard
-                  key={service.name}
-                  name={service.name}
-                  health={service.health}
-                  loading={service.loading}
-                  error={service.error}
-                />
-              ))}
+              {services.map(renderServiceCard)}
             </div>
           </section>
 
-          {/* Footer */}
           <footer className="mt-12 text-center text-sm text-white/30">
             <p>Flashcastr Health Monitor &middot; Auto-refreshes every {REFRESH_INTERVAL}s</p>
           </footer>
