@@ -113,10 +113,10 @@ export function ServiceCard({ name, health, loading, error }: ServiceCardProps) 
               warn={health.metrics.memoryUsage > 80}
             />
             <MetricCard
-              label="Failed Flashes"
-              value={health.metrics.failedFlashes.toString()}
-              icon="alert"
-              warn={health.metrics.failedFlashes > 0}
+              label="Messages"
+              value={health.metrics.messages?.published?.toString() || "0"}
+              icon="message"
+              
             />
             <MetricCard
               label="Last Sync"
