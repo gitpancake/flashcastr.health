@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { ServiceCard } from '@/components/service-card';
 import { ConsumerCard } from '@/components/consumer-card';
 import { Heartbeat, OverallStatus } from '@/components/status-display';
-import { DetailedHealth, ProducerHealth, ConsumerHealth, isConsumerHealth, isProducerHealth } from '@/lib/types';
+import { DetailedHealth, ProducerHealth, ConsumerHealth } from '@/lib/types';
 
 interface ServiceState {
   name: string;
@@ -14,48 +14,25 @@ interface ServiceState {
   error?: string;
 }
 
-const SERVICES = [
-  {
-    name: 'Producer Bot',
-    type: 'producer' as const,
-    url: process.env.NEXT_PUBLIC_PRODUCER_URL || 'https://producer.flashcastr.app',
-  },
-  {
-    name: 'Consumer',
-    type: 'consumer' as const,
-    url: process.env.NEXT_PUBLIC_CONSUMER_URL || '',
-  },
-].filter(s => s.url);
-
 const REFRESH_INTERVAL = 30;
 
 export default function Dashboard() {
-  const [services, setServices] = useState<ServiceState[]>(
-    SERVICES.map((s) => ({ name: s.name, type: s.type, loading: true }))
-  );
+  const [services, setServices] = useState<ServiceState[]>([]);
   const [lastCheck, setLastCheck] = useState<string>();
+  const [loading, setLoading] = useState(true);
 
   const fetchHealth = useCallback(async () => {
-    const results = await Promise.all(
-      SERVICES.map(async (service) => {
-        try {
-          const response = await fetch(`/api/health?service=${encodeURIComponent(service.url)}`);
-          if (!response.ok) throw new Error(`HTTP ${response.status}`);
-          const health = await response.json();
-          return { name: service.name, type: service.type, health, loading: false };
-        } catch (err) {
-          return {
-            name: service.name,
-            type: service.type,
-            loading: false,
-            error: err instanceof Error ? err.message : 'Failed to fetch',
-          };
-        }
-      })
-    );
-
-    setServices(results);
-    setLastCheck(new Date().toISOString());
+    try {
+      const response = await fetch('/api/health/all');
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const results = await response.json();
+      setServices(results);
+      setLastCheck(new Date().toISOString());
+    } catch (err) {
+      console.error('Failed to fetch health:', err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -131,7 +108,14 @@ export default function Dashboard() {
           <section>
             <h2 className="text-lg font-semibold text-white mb-4">Services</h2>
             <div className="grid gap-6 md:grid-cols-2">
-              {services.map(renderServiceCard)}
+              {loading ? (
+                <>
+                  <ServiceCard name="Producer Bot" loading={true} />
+                  <ConsumerCard name="Consumer" loading={true} />
+                </>
+              ) : (
+                services.map(renderServiceCard)
+              )}
             </div>
           </section>
 
